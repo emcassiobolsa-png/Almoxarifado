@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-primary: #003527;
+  --color-primary-container: #064e3b;
+  --color-on-primary-container: #80bea6;
+  
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eff3ff;
+  --color-surface-container: #e6eeff;
+  --color-surface-container-high: #dee9fd;
+  --color-surface-container-highest: #d9e3f7;
+  
+  --color-on-surface: #121c2a;
+  --color-on-surface-variant: #404944;
+  
+  --color-outline-variant: #bfc9c3;
+}
+
+@layer base {
+  body {
+    @apply bg-[#f9f9ff] text-on-surface font-sans antialiased;
+  }
+}
+
+@layer components {
+  .zebra-table tr:nth-child(even) {
+    @apply bg-surface-container-low/30;
+  }
+  
+  .sidebar-item-active {
+    @apply text-primary font-bold border-r-4 border-primary bg-surface-container-low;
+  }
+}
+
+/* Área de Impressão */
+.no-screen {
+  display: none !important;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .no-screen {
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+
+  /* Força cores e imagens de fundo */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}

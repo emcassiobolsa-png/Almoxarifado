@@ -1,0 +1,6 @@
+{
+  "name": "Almoxarifado",
+  "description": "Sistema profissional de gestão de almoxarifado, controle de estoque por validade e movimentações institucionais.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
