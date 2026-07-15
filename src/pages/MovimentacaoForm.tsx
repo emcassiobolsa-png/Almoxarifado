@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, mockProdutos, mockPessoas, isSupabaseConfigured } from '../services/api';
 import { TipoMovimentacao, MovimentacaoDetalhe, Pessoa, Produto, Estoque, Movimentacao } from '../types';
-import { Search, Save, X, Plus, Trash2, Info, AlertTriangle, Barcode, Check, User, Users, Filter, CheckCircle } from 'lucide-react';
+import { Search, Save, X, Plus, Trash2, Info, AlertTriangle, Barcode, Check, User, Users, Filter, CheckCircle, Smartphone } from 'lucide-react';
 import { cn, formatCurrency, getCuiabaDateString } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -32,6 +32,7 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
   const [availableLots, setAvailableLots] = useState<Estoque[]>([]);
   const [selectedLot, setSelectedLot] = useState<Estoque | null>(null);
   const [manualVencimento, setManualVencimento] = useState('');
+  const [caEpi, setCaEpi] = useState('');
   const [qty, setQty] = useState(1);
 
   // New product filtering states to prevent automatic search on the fly
@@ -47,6 +48,11 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
   const [items, setItems] = useState<Partial<MovimentacaoDetalhe>[]>(editData?.itens || []);
   const [barcodesMap, setBarcodesMap] = useState<Record<number, { code: string; date: string }[]>>({});
   const [errorHeader, setErrorHeader] = useState<string | null>(null);
+  
+  // Mobile cell captures import states
+  const [hasCellCapture, setHasCellCapture] = useState(false);
+  const [cellCaptureItems, setCellCaptureItems] = useState<any[]>([]);
+  const [clearCellCaptureOnSave, setClearCellCaptureOnSave] = useState(false);
   
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
@@ -76,7 +82,61 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
     } else {
       api.getPessoas().then(setPessoas);
     }
+
+    // Check if editing a draft that has cell captures
+    if (editData?.justificativacessao) {
+      try {
+        const parsed = JSON.parse(editData.justificativacessao);
+        if (parsed && parsed.isCapturaCelular && Array.isArray(parsed.itens) && parsed.itens.length > 0) {
+          setHasCellCapture(true);
+          setCellCaptureItems(parsed.itens);
+        }
+      } catch (err) {
+        // Not a mobile capture json, ignore
+      }
+    } else {
+      setHasCellCapture(false);
+      setCellCaptureItems([]);
+    }
   }, [editData]);
+
+  const handleImportCellCapture = () => {
+    if (cellCaptureItems.length === 0) return;
+
+    const imported: Partial<MovimentacaoDetalhe>[] = cellCaptureItems.map(it => ({
+      id_produto: it.id_produto,
+      quantidade: it.quantidade,
+      vencimento: it.vencimento,
+      produto: {
+        id_produto: it.id_produto,
+        descricao: it.descricao,
+        unidade: it.unidade || 'UN',
+        preco: 0,
+        id_categoria: 1
+      }
+    }));
+
+    setItems(prev => {
+      const merged = [...prev];
+      imported.forEach(imp => {
+        const existIdx = merged.findIndex(it => it.id_produto === imp.id_produto && it.vencimento === imp.vencimento);
+        if (existIdx !== -1) {
+          merged[existIdx] = {
+            ...merged[existIdx],
+            quantidade: (merged[existIdx].quantidade || 0) + imp.quantidade!
+          };
+        } else {
+          merged.push(imp);
+        }
+      });
+      return merged;
+    });
+
+    setHasCellCapture(false);
+    setCellCaptureItems([]);
+    setClearCellCaptureOnSave(true);
+    alert(`Sucesso! ${imported.length} itens captados pelo celular foram importados para a lista atual.`);
+  };
 
   const handleFilterPessoas = async () => {
     if (searchPessoaText.trim().length < 3) {
@@ -191,6 +251,7 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
               pessoas.find(p => p.id_pessoas === Number(pessoaId)) || 
               mockPessoas.find(p => p.id_pessoas === Number(pessoaId)),
       doc_entrada: docEntrada,
+      justificativacessao: clearCellCaptureOnSave ? null : editData?.justificativacessao,
       itens: items.map((item, idx) => ({
         ...item,
         id_mov_detalhe: Math.floor(Math.random() * 1000000) + idx,
@@ -237,12 +298,17 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
       }
     }
 
+    if (flow === 'SAÍDA' && selectedProduct.epi && !caEpi) {
+      setErrorHeader('Obrigatório informar o número do C.A. para a saída deste EPI.');
+      return;
+    }
+
     setErrorHeader(null);
 
     setItems(prevItems => {
-      // Verifica se já existe um item com o mesmo produto e vencimento na lista
+      // Verifica se já existe um item com o mesmo produto, vencimento e ca_epi na lista
       const existingItemIndex = prevItems.findIndex(
-        item => item.id_produto === selectedProduct.id_produto && item.vencimento === vencimentoFinal
+        item => item.id_produto === selectedProduct.id_produto && item.vencimento === vencimentoFinal && item.ca_epi === (flow === 'SAÍDA' && selectedProduct.epi ? caEpi : undefined)
       );
 
       if (existingItemIndex !== -1) {
@@ -261,7 +327,8 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
         id_produto: selectedProduct.id_produto,
         quantidade: qty,
         vencimento: vencimentoFinal,
-        produto: selectedProduct
+        produto: selectedProduct,
+        ca_epi: (flow === 'SAÍDA' && selectedProduct.epi) ? caEpi : undefined
       };
       return [...prevItems, newItem];
     });
@@ -269,6 +336,7 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
     setSelectedProduct(null);
     setSelectedLot(null); // Limpa o lote selecionado
     setManualVencimento(''); // Limpa data manual
+    setCaEpi(''); // Limpa C.A.
     setQty(1);
     setSearchProduct('');
     setHasFilteredProducts(false);
@@ -313,6 +381,37 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
+          {/* Banner de Captações Celular */}
+          {hasCellCapture && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              className="bg-sky-50 text-sky-900 border border-sky-200 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs"
+            >
+              <div className="flex items-start gap-3.5">
+                <div className="bg-sky-100 p-2.5 rounded-xl text-sky-700 shrink-0">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-sky-950 uppercase tracking-wide">
+                    Há Captações pelo Celular para este Pedido!
+                  </h4>
+                  <p className="text-xs text-sky-750 mt-1 font-medium">
+                    O operador coletou um total de <span className="font-extrabold text-sky-950">{cellCaptureItems.length} {cellCaptureItems.length === 1 ? 'item' : 'itens'}</span> de produtos neste pedido via celular.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleImportCellCapture}
+                className="bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-bold text-xs py-2.5 px-5 rounded-xl shrink-0 shadow-sm border border-sky-700/15 flex items-center gap-1.5 transition-all select-none cursor-pointer"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Confirmar Importação de Dados
+              </button>
+            </motion.div>
+          )}
+
           {/* Header Info */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 border border-outline-variant rounded-2xl bg-surface-container-low/10">
             <div className="space-y-1.5">
@@ -658,9 +757,9 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
                     <button onClick={() => setSelectedProduct(null)} className="text-on-surface-variant hover:text-error"><X className="w-4 h-4" /></button>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="flex flex-wrap items-start gap-4">
                     {flow === 'SAÍDA' ? (
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 flex-1 min-w-[200px]">
                         <label className="text-[10px] font-black uppercase tracking-widest opacity-60">Lote / Vencimento (SAÍDA)</label>
                         <select 
                           className="w-full bg-white border border-outline-variant rounded-lg p-2 text-sm outline-none focus:border-primary"
@@ -678,7 +777,7 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
                         </select>
                       </div>
                     ) : (
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 flex-1 min-w-[200px]">
                         <label className="text-[10px] font-black uppercase tracking-widest opacity-60">Vencimento do Lote (ENTRADA)</label>
                         <input 
                           type="date"
@@ -688,7 +787,21 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
                         />
                       </div>
                     )}
-                    <div className="space-y-1.5 flex flex-col">
+                    
+                    {flow === 'SAÍDA' && selectedProduct.epi && (
+                      <div className="space-y-1.5 flex-1 min-w-[150px]">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Nº do C.A. (EPI)</label>
+                        <input 
+                          type="text" 
+                          placeholder="Ex: 12345"
+                          className="w-full bg-white border border-emerald-300 focus:ring-1 focus:ring-emerald-500 rounded-lg p-2 text-sm outline-none"
+                          value={caEpi}
+                          onChange={(e) => setCaEpi(e.target.value)}
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="space-y-1.5 flex flex-col w-[120px]">
                       <label className="text-[10px] font-black uppercase tracking-widest opacity-60">Quantidade</label>
                       <input 
                         type="number" 
@@ -707,7 +820,7 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
                         </div>
                       )}
                     </div>
-                    <div className="flex items-end">
+                    <div className="flex items-end mt-5 min-w-[180px]">
                       <button 
                         onClick={handleAddProduct}
                         className="w-full bg-primary text-white py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center"
@@ -758,6 +871,11 @@ export function MovimentacaoForm({ onClose, editData }: { onClose: () => void, e
                       <td className="px-6 py-4">
                         <p className="font-bold">{item.produto?.descricao}</p>
                         <p className="text-[10px] text-on-surface-variant font-mono">LOT-AUTO-{item.id_produto}</p>
+                        {item.ca_epi && (
+                          <span className="inline-block mt-1 bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-3xs">
+                            C.A.: {item.ca_epi}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 font-medium">
                         {item.vencimento ? item.vencimento.split('-').reverse().join('/') : '-'}

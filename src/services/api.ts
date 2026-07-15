@@ -324,7 +324,8 @@ const rawApi = {
              descricao: produto.descricao,
              id_categoria: produto.id_categoria,
              unidade: produto.unidade,
-             preco: produto.preco
+             preco: produto.preco,
+             epi: produto.epi || false
           })
           .eq('id_produto', produto.id_produto)
           .select('*, categorias(descricao)')
@@ -339,7 +340,8 @@ const rawApi = {
              descricao: produto.descricao,
              id_categoria: produto.id_categoria,
              unidade: produto.unidade,
-             preco: produto.preco
+             preco: produto.preco,
+             epi: produto.epi || false
           })
           .select('*, categorias(descricao)')
           .single();
@@ -354,7 +356,8 @@ const rawApi = {
                 descricao: produto.descricao,
                 id_categoria: produto.id_categoria,
                 unidade: produto.unidade,
-                preco: produto.preco
+                preco: produto.preco,
+                epi: produto.epi || false
              })
              .select('*, categorias(descricao)')
              .single();
@@ -626,6 +629,7 @@ const rawApi = {
             entrada_saida: mov.entrada_saida,
             doc_entrada: mov.doc_entrada,
             status: mov.status,
+            justificativacessao: mov.justificativacessao,
           })
           .eq('id_movimentacao', mov.id_movimentacao)
           .select('*')
@@ -643,6 +647,7 @@ const rawApi = {
             entrada_saida: mov.entrada_saida,
             doc_entrada: mov.doc_entrada,
             status: mov.status || 'DIGITANDO',
+            justificativacessao: mov.justificativacessao,
           })
           .select('*')
           .single();
@@ -660,6 +665,7 @@ const rawApi = {
                 entrada_saida: mov.entrada_saida,
                 doc_entrada: mov.doc_entrada,
                 status: mov.status || 'DIGITANDO',
+                justificativacessao: mov.justificativacessao,
              })
              .select('*')
              .single();
@@ -684,7 +690,8 @@ const rawApi = {
                 id_movimentacao: savedMov.id_movimentacao,
                 id_produto: item.id_produto,
                 quantidade: item.quantidade,
-                vencimento: item.vencimento
+                vencimento: item.vencimento,
+                ca_epi: item.ca_epi || null
             }));
             const { error: itemsError } = await supabase.from('movimentacao_detalhe').insert(itemsToInsert);
             if (itemsError) throw itemsError;

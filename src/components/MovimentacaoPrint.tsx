@@ -162,7 +162,14 @@ export function MovimentacaoPrint({ movimentacao, logoDataUrl }: MovimentacaoPri
             {itens.map((item, i) => (
               <tr key={i}>
                 <td className="py-1 px-2 border-none">
-                  <div className="text-[13px] font-[500] text-black uppercase" style={{fontFamily: "'Aptos Narrow', sans-serif"}}>{item.produto?.descricao}</div>
+                  <div className="text-[13px] font-[500] text-black uppercase" style={{fontFamily: "'Aptos Narrow', sans-serif"}}>
+                    {item.produto?.descricao}
+                    {item.ca_epi && (
+                      <span className="ml-2 text-[10px] text-gray-500 font-bold uppercase">
+                        (C.A.: {item.ca_epi})
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="py-1 px-2 text-center text-[13px] font-[500] text-black border-none" style={{fontFamily: "'Aptos Narrow', sans-serif"}}>
                   {item.vencimento ? item.vencimento.split('-').reverse().join('/') : '---'}

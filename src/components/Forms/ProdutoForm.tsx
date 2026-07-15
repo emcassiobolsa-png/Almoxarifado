@@ -19,7 +19,8 @@ export function ProdutoForm({ onClose, onSave, initialData }: ProdutoFormProps) 
     id_categoria: initialData?.id_categoria || '',
     unidade: initialData?.unidade || 'UN',
     preco: maskCurrency(initialData?.preco || 0),
-    cod_barras: '' // Ideally this would be in the model too if available
+    cod_barras: '', // Ideally this would be in the model too if available
+    epi: initialData?.epi || false
   });
 
   useEffect(() => {
@@ -120,16 +121,28 @@ export function ProdutoForm({ onClose, onSave, initialData }: ProdutoFormProps) 
                 />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest opacity-60">Código de Barras Principal</label>
-              <input 
-                type="text"
-                className="w-full bg-surface-container-low/50 border border-outline-variant rounded-lg p-2.5 text-sm outline-none focus:ring-1 focus:ring-primary font-mono"
-                placeholder="7890000000000"
-                value={formData.cod_barras}
-                onChange={e => setFormData({ ...formData, cod_barras: e.target.value })}
-              />
+            <div className="space-y-1.5 flex flex-col justify-end pb-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="checkbox"
+                  className="w-4 h-4 text-primary rounded border-outline-variant focus:ring-primary"
+                  checked={formData.epi}
+                  onChange={e => setFormData({ ...formData, epi: e.target.checked })}
+                />
+                <span className="text-sm font-bold text-on-surface-variant">Este produto é um EPI? (Sim/Não)</span>
+              </label>
             </div>
+          </div>
+          
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest opacity-60">Código de Barras Principal</label>
+            <input 
+              type="text"
+              className="w-full bg-surface-container-low/50 border border-outline-variant rounded-lg p-2.5 text-sm outline-none focus:ring-1 focus:ring-primary font-mono"
+              placeholder="7890000000000"
+              value={formData.cod_barras}
+              onChange={e => setFormData({ ...formData, cod_barras: e.target.value })}
+            />
           </div>
 
           <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 flex gap-3">

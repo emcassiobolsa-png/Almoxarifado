@@ -7,7 +7,8 @@ import {
   Warehouse, 
   ClipboardList,
   LogOut,
-  Database
+  Database,
+  Smartphone
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/src/lib/utils';
@@ -22,6 +23,7 @@ const navItems = [
   { icon: ArrowLeftRight, label: 'Movimentações', to: '/movimentacoes' },
   { icon: Warehouse, label: 'Estoque', to: '/estoque' },
   { icon: ClipboardList, label: 'Relatórios', to: '/relatorios' },
+  { icon: Smartphone, label: 'Captação Celular', to: '/captacao-celular' },
 ];
 
 export function Sidebar() {

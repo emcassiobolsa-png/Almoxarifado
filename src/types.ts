@@ -26,6 +26,7 @@ export interface Produto {
   id_categoria: number;
   preco: number;
   data_balanco?: string;
+  epi?: boolean;
   categoria?: Categoria;
 }
 
@@ -58,7 +59,8 @@ export interface Movimentacao {
   entrada_saida: 'ENTRADA' | 'SAÍDA';
   doc_entrada?: string;
   status: StatusMovimentacao;
-  justificativaessa?: string;
+  justificativaessa?: string | null;
+  justificativacessao?: string | null;
   pessoa?: Pessoa;
   itens?: MovimentacaoDetalhe[];
 }
@@ -77,5 +79,6 @@ export interface MovimentacaoDetalhe {
   id_produto: number;
   quantidade: number;
   vencimento: string;
+  ca_epi?: string;
   produto?: Produto;
 }

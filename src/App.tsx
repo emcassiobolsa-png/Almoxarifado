@@ -7,6 +7,8 @@ import { Movimentacoes } from './pages/Movimentacoes';
 import { Estoque } from './pages/Estoque';
 import { CodigosBarras } from './pages/CodigosBarras';
 import { Relatorios } from './pages/Relatorios';
+import { CaptacaoCelular } from './pages/CaptacaoCelular';
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -19,6 +21,7 @@ export default function App() {
           <Route path="/movimentacoes" element={<Movimentacoes />} />
           <Route path="/estoque" element={<Estoque />} />
           <Route path="/relatorios" element={<Relatorios />} />
+          <Route path="/captacao-celular" element={<CaptacaoCelular />} />
         </Route>
       </Routes>
     </BrowserRouter>
